@@ -1,16 +1,19 @@
-// Normalize API_BASE_URL so it works whether user entered backend root or /api, with or without trailing slash
-function getApiBaseUrl(): string {
-  let base = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api").trim();
-  // Strip trailing slashes
-  base = base.replace(/\/+$/, "");
-  // If user provided the base URL without /api, ensure /api is attached
-  if (!base.endsWith("/api")) {
-    base = `${base}/api`;
+// Normalize API_BASE_URL: works in dev, production Vercel, and with or without custom env vars
+export function getApiBaseUrl(): string {
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    let base = process.env.NEXT_PUBLIC_API_URL.trim().replace(/\/+$/, "");
+    if (!base.endsWith("/api")) {
+      base = `${base}/api`;
+    }
+    return base;
   }
-  return base;
+  // If running in production browser on Vercel, automatically target live Render backend
+  if (typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+    return "https://cloudgpt-platform.onrender.com/api";
+  }
+  return "http://localhost:8000/api";
 }
 
-const API_BASE_URL = getApiBaseUrl();
 
 export interface User {
   id: string;
@@ -85,7 +88,9 @@ async function request(endpoint: string, options: RequestInit = {}) {
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  const baseUrl = getApiBaseUrl();
+  const cleanEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+  const response = await fetch(`${baseUrl}${cleanEndpoint}`, {
     ...options,
     headers,
   });
@@ -157,7 +162,8 @@ export const chatsApi = {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/chats/${chatId}/message`, {
+      const baseUrl = getApiBaseUrl();
+      const response = await fetch(`${baseUrl}/chats/${chatId}/message`, {
         method: "POST",
         headers,
         body: JSON.stringify(payload),
@@ -228,7 +234,8 @@ export const documentsApi = {
     const headers: Record<string, string> = {};
     if (token) headers["Authorization"] = `Bearer ${token}`;
 
-    const res = await fetch(`${API_BASE_URL}/documents/upload`, {
+    const baseUrl = getApiBaseUrl();
+    const res = await fetch(`${baseUrl}/documents/upload`, {
       method: "POST",
       headers,
       body: formData,

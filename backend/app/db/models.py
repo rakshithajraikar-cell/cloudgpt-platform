@@ -7,6 +7,9 @@ from app.db.database import Base
 def generate_uuid():
     return str(uuid.uuid4())
 
+def utc_now():
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
 class User(Base):
     __tablename__ = "users"
 
@@ -16,7 +19,7 @@ class User(Base):
     hashed_password = Column(String, nullable=True)
     avatar_url = Column(String, nullable=True)
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=utc_now)
 
     conversations = relationship("Conversation", back_populates="user", cascade="all, delete-orphan")
     documents = relationship("Document", back_populates="user", cascade="all, delete-orphan")
@@ -28,8 +31,8 @@ class Conversation(Base):
     id = Column(String, primary_key=True, default=generate_uuid, index=True)
     user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     title = Column(String, default="New Chat")
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     user = relationship("User", back_populates="conversations")
     messages = relationship("Message", back_populates="conversation", cascade="all, delete-orphan", order_by="Message.created_at")
@@ -44,7 +47,7 @@ class Message(Base):
     content = Column(Text, nullable=False)
     tokens = Column(Integer, default=0)
     citations_json = Column(Text, nullable=True)  # JSON string of document source references
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=utc_now)
 
     conversation = relationship("Conversation", back_populates="messages")
 
@@ -58,6 +61,7 @@ class Document(Base):
     file_type = Column(String, nullable=False)
     file_size = Column(Integer, default=0)
     num_chunks = Column(Integer, default=0)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=utc_now)
 
     user = relationship("User", back_populates="documents")
+

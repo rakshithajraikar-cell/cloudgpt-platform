@@ -1,5 +1,7 @@
+import traceback
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.db.database import init_db
@@ -9,8 +11,12 @@ from app.api import auth, chats, documents
 async def lifespan(app: FastAPI):
     # Initialize database tables on startup
     print(f"[{settings.PROJECT_NAME}] Initializing database tables...")
-    await init_db()
-    print(f"[{settings.PROJECT_NAME}] Database ready. Backend listening for requests.")
+    try:
+        await init_db()
+        print(f"[{settings.PROJECT_NAME}] Database ready. Backend listening for requests.")
+    except Exception as e:
+        print(f"[{settings.PROJECT_NAME}] Error initializing database: {e}")
+        traceback.print_exc()
     yield
 
 app = FastAPI(
@@ -19,10 +25,21 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+# Global error handler for debugging
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    err = traceback.format_exc()
+    print(f"Unhandled exception on {request.url.path}: {err}")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": str(exc), "traceback": err}
+    )
+
 # CORS middleware for Next.js frontend and cloud deployments
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
+
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],

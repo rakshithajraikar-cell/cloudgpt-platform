@@ -25,7 +25,11 @@ else:
         params.pop("channel_binding", None)
         new_query = urlencode(params, doseq=True)
         db_url = urlunparse(parsed._replace(query=new_query))
-    connect_args = {"ssl": "require"}
+    import ssl
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    connect_args = {"ssl": ctx}
 
 engine = create_async_engine(
     db_url,
@@ -33,7 +37,6 @@ engine = create_async_engine(
     connect_args=connect_args,
     pool_pre_ping=True
 )
-
 
 AsyncSessionLocal = async_sessionmaker(
     bind=engine,
@@ -51,5 +54,8 @@ async def get_db():
             await session.close()
 
 async def init_db():
+    # Ensure models are imported before creating tables
+    import app.db.models
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+

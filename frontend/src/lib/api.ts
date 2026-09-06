@@ -1,4 +1,16 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+// Normalize API_BASE_URL so it works whether user entered backend root or /api, with or without trailing slash
+function getApiBaseUrl(): string {
+  let base = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api").trim();
+  // Strip trailing slashes
+  base = base.replace(/\/+$/, "");
+  // If user provided the base URL without /api, ensure /api is attached
+  if (!base.endsWith("/api")) {
+    base = `${base}/api`;
+  }
+  return base;
+}
+
+const API_BASE_URL = getApiBaseUrl();
 
 export interface User {
   id: string;

@@ -55,9 +55,24 @@ async def root():
     return {
         "status": "online",
         "app": settings.PROJECT_NAME,
-        "version": "3.0.0",
+        "version": "3.0.1",
         "docs_url": "/docs"
     }
+
+@app.get("/api/db-test")
+async def db_test():
+    import traceback
+    from sqlalchemy import text
+    try:
+        from app.db.database import engine, init_db
+        await init_db()
+        async with engine.connect() as conn:
+            res = await conn.execute(text("SELECT 1"))
+            val = res.scalar()
+        return {"status": "ok", "db_connected": True, "result": val}
+    except Exception as e:
+        return {"status": "error", "error": str(e), "traceback": traceback.format_exc()}
+
 
 @app.get("/health")
 async def health():

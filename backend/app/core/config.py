@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     
     # Default model settings
     DEFAULT_PROVIDER: str = "groq"
-    DEFAULT_MODEL: str = "llama-3.3-70b-versatile"
+    DEFAULT_MODEL: str = "openai/gpt-oss-20b"
     
     # Google OAuth
     GOOGLE_CLIENT_ID: str = os.getenv("GOOGLE_CLIENT_ID", "")

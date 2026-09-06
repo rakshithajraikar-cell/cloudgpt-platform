@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 from app.db.database import get_db, AsyncSessionLocal
-from app.db.models import User, Conversation, Message
+from app.db.models import User, Conversation, Message, utc_now
 from app.api.deps import get_current_user
 from app.schemas.chat import (
     ConversationOut,
@@ -197,7 +197,7 @@ async def send_message(
         words = req.content.strip().split()
         conv.title = " ".join(words[:5]) + ("..." if len(words) > 5 else "")
 
-    conv.updated_at = datetime.now(timezone.utc)
+    conv.updated_at = utc_now()
     await db.commit()
 
     # 2. Build Multi-Turn History
@@ -279,7 +279,7 @@ async def send_message(
                 c_res = await save_session.execute(c_stmt)
                 c_obj = c_res.scalars().first()
                 if c_obj:
-                    c_obj.updated_at = datetime.now(timezone.utc)
+                    c_obj.updated_at = utc_now()
                 await save_session.commit()
 
     return StreamingResponse(
